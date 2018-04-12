@@ -66,12 +66,10 @@ void hal_gpio_set_alt_function(GPIO_TypeDef *GPIOx, uint16_t pin_no, uint16_t al
 {
   //recall 2 alt fun registers. low and high. 
   //if range of pin is 0..7, we use low reg., else, use high-> AFRL or AFRH
-  if (pin_no <= 7)
-  {
+  if (pin_no <= 7)  {
     GPIOx->AFRL |= (alt_fun_value << (4 * pin_no));
   }
-  else
-  {
+  else  {
     GPIOx->AFRH |= (alt_fun_value << ((pin_no % 8) * 4));   
   }
 }
@@ -101,11 +99,24 @@ uint8_t hal_gpio_read_from_pin(GPIO_TypeDef *GPIOx, uint16_t pin_no)
 	*/
 void hal_gpio_write_to_pin(GPIO_TypeDef *GPIOx, uint16_t pin_no, uint8_t val)
 {
-  if (val)
-  {
-    GPIOx->
+  if (val)  {
+    GPIOx->ODR |= (1 << pin_no);
   }
-  else
-  {
+  else  {
+    GPIOx->ODR &= ~(1 << pin_no);
   }
+}
+
+/**
+	* @brief  Initializes the gpio pin 
+	* @param  *GPIOx : GPIO Port Base address
+	* @param  *gpio_pin_conf :Pointer to the pin conf structure sent by application 
+	* @retval None
+	*/
+void hal_gpio_init(GPIO_TypeDef *GPIOx, gpio_pin_conf_t *gpio_pin_conf)
+{
+  hal_gpio_configure_pin_mode(GPIOx, gpio_pin_conf->pin, gpio_pin_conf->mode);
+  hal_gpio_configure_pin_speed(GPIOx, gpio_pin_conf->pin, gpio_pin_conf->speed);
+  hal_gpio_configure_pin_otype(GPIOx, gpio_pin_conf->pin, gpio_pin_conf->op_type);
+  hal_gpio_configure_pin_pupd(GPIOx, gpio_pin_conf->pin, gpio_pin_conf->pull);
 }
