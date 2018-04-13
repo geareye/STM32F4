@@ -1,4 +1,4 @@
-"C:\Users\gyalcin\Downloads\stm32F4\sw\CubeMXProject\test\Drivers\hal_gpio_driver.c"
+"C:\Users\gyalcin\Downloads\stm32F4\sw\CubeMXProject\test\Src\hal_gpio_driver.c"
 -std=c99
 -ferror-limit=100
 -I

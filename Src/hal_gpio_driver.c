@@ -67,10 +67,10 @@ void hal_gpio_set_alt_function(GPIO_TypeDef *GPIOx, uint16_t pin_no, uint16_t al
   //recall 2 alt fun registers. low and high. 
   //if range of pin is 0..7, we use low reg., else, use high-> AFRL or AFRH
   if (pin_no <= 7)  {
-    GPIOx->AFRL |= (alt_fun_value << (4 * pin_no));
+    GPIOx->AFR[0] |= (alt_fun_value << (4 * pin_no));
   }
   else  {
-    GPIOx->AFRH |= (alt_fun_value << ((pin_no % 8) * 4));   
+    GPIOx->AFR[1] |= (alt_fun_value << ((pin_no % 8) * 4));   
   }
 }
 
@@ -85,7 +85,7 @@ uint8_t hal_gpio_read_from_pin(GPIO_TypeDef *GPIOx, uint16_t pin_no)
   uint8_t value;
   
   //read IDR (input data register), and right shift by the pin number, then mask to get pin value aligned with lsb
-  value = (GPIO->IDR >> pin_no) & 0x00000001;
+  value = (GPIOx->IDR >> pin_no) & 0x00000001;
   
   return value; 
 }
@@ -119,4 +119,35 @@ void hal_gpio_init(GPIO_TypeDef *GPIOx, gpio_pin_conf_t *gpio_pin_conf)
   hal_gpio_configure_pin_speed(GPIOx, gpio_pin_conf->pin, gpio_pin_conf->speed);
   hal_gpio_configure_pin_otype(GPIOx, gpio_pin_conf->pin, gpio_pin_conf->op_type);
   hal_gpio_configure_pin_pupd(GPIOx, gpio_pin_conf->pin, gpio_pin_conf->pull);
+}
+
+void hal_gpio_configure_interrupt(uint16_t pin_no, int_edge_sel_t edge_sel)
+{
+  if (edge_sel == INT_RISING_EDGE)
+  {
+    EXTI->RTSR |= 1 << pin_no;
+  }
+  else if (INT_FALLING_EDGE)
+  {
+    EXTI->FTSR |= 1 << pin_no;
+  }
+  else // INT_RISING_FALLING_EDGE
+  {
+    EXTI->RTSR |= 1 << pin_no;
+    EXTI->FTSR |= 1 << pin_no;
+  }
+}
+
+void hal_gpio_pin_enable_interrupt(uint16_t pin_no, IRQn_Type irq_no)
+{
+  EXTI->IMR |= 1 << pin_no;
+  NVIC_EnableIRQ(irq_no);
+}
+
+void 	hal_gpio_clear_interrupt(uint16_t pin)
+{
+  if (EXTI->PR & (1 << pin))
+  {
+    EXTI->PR |= 1 << pin;
+  }
 }

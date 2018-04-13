@@ -1,5 +1,5 @@
-#ifndef _HAL_GPIO_DRIVER_H
-#define _HAL_GPIO_DRIVER_H
+#ifndef __HAL_GPIO_DRIVER_H
+#define __HAL_GPIO_DRIVER_H
 
 #include "stm32f407xx.h"
 
@@ -14,6 +14,11 @@
 #define GPIO_PIN_SPEED_MEDIUM           ((uint32_t) 0x01)
 #define GPIO_PIN_SPEED_HIGH             ((uint32_t) 0x02)
 #define GPIO_PIN_SPEED_VERY_HIGH        ((uint32_t) 0x03)
+
+/* GPIO pull up/pull dwn  selection values */
+#define GPIO_PIN_NO_PULL_PUSH                          ( (uint32_t)0x00 )
+#define GPIO_PIN_PULL_UP                               ( (uint32_t)0x01 )
+#define GPIO_PIN_PULL_DOWN                             ( (uint32_t)0x11 )
 
 /* gpio port address */
 #define GPIO_PORT_A GPIOA
@@ -84,7 +89,7 @@ uint8_t hal_gpio_read_from_pin(GPIO_TypeDef *GPIOx, uint16_t pin_no);
 	* @param  value   : value to be written 
 	* @retval None
 	*/
-uint8_t hal_gpio_write_to_pin(GPIO_TypeDef *GPIOx, uint16_t pin_no, uint8_t val);
+void hal_gpio_write_to_pin(GPIO_TypeDef *GPIOx, uint16_t pin_no, uint8_t val);
 
 /**
 	* @brief  Set the alternate functionality for the given pin  
@@ -110,7 +115,7 @@ void hal_gpio_configure_interrupt(uint16_t pin_no, int_edge_sel_t edge_sel);
 	* @param  irq_no   :  irq_number to be enabled in NVIC 
 	* @retval None
 	*/
-void hal_gpio_pin_enable_interrupt(GPIO_TypeDef *GPIOx, uint16_t pin_no, IRQn_Type irq_no);
+void hal_gpio_pin_enable_interrupt(uint16_t pin_no, IRQn_Type irq_no);
 
 
 /**

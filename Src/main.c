@@ -40,19 +40,98 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
+#include "led.h"
+
 void SystemClock_Config(void);
 
 int main(void)
 {
+  uint32_t i;
+  
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
   
   SystemClock_Config();
 
+  //init the leds
+  led_init();
+  
+  /* Enable the clock for the GPIOA Port, where the button is */
+  _HAL_RCC_GPIOA_CLK_ENABLE();
+  //set the mode as input
+  GPIOA->MODER &= ~0x3;
+  GPIOA->PUPDR  &= ~0x3;
+  //enable SYSCONFG for managing the external interrupt line
+  //connection to the GPIO
+  RCC->APB2ENR |= 0x00004000;
+  
+  /*Configure the button interrupt as falling edge */
+  hal_gpio_configure_interrupt(GPIO_BUTTON_PIN, INT_FALLING_EDGE);
+  /*Enable the interrupt on EXTI0 line */
+  hal_gpio_pin_enable_interrupt(GPIO_BUTTON_PIN, EXTIx_IRQn);  
+  
+  
   while (1)
   {
-
+    led_turn_on(GPIOD, LED_ORANGE);
+    led_turn_on(GPIOD, LED_BLUE);
+    
+    for (i = 0; i<500000; i++)
+      asm("nop");
+    
+    led_turn_off(GPIOD, LED_ORANGE);
+    led_turn_off(GPIOD, LED_BLUE);
+    
+    for (i = 0; i<500000; i++)
+      asm("nop");
   }
+}
+
+void led_init(void)
+{
+  /* enable the clock for the GPIOD port, where the leds will sit on */
+  _HAL_RCC_GPIOD_CLK_ENABLE();
+
+  /* set the leds 12->15 to be output, and get them ready for toggling */
+  gpio_pin_conf_t led_pin_conf;
+  led_pin_conf.pin      = LED_ORANGE;
+  led_pin_conf.mode     = GPIO_PIN_OUTPUT_MODE;
+  led_pin_conf.op_type  = GPIO_PIN_OP_TYPE_PUSHPULL;
+  led_pin_conf.speed    = GPIO_PIN_SPEED_MEDIUM;
+  led_pin_conf.pull     = GPIO_PIN_NO_PULL_PUSH;
+  hal_gpio_init(GPIOD, &led_pin_conf);
+  
+  led_pin_conf.pin = LED_BLUE;
+  hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
+
+  led_pin_conf.pin = LED_GREEN;
+  hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
+
+  led_pin_conf.pin = LED_RED;
+  hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
+}
+
+void led_turn_on(GPIO_TypeDef *GPIOx, uint16_t pin)
+{
+  hal_gpio_write_to_pin(GPIOx, pin, 1);
+}
+
+void led_turn_off(GPIO_TypeDef *GPIOx, uint16_t pin)
+{
+  hal_gpio_write_to_pin(GPIOx, pin, 0);
+}
+
+void led_toggle(GPIO_TypeDef *GPIOx, uint16_t pin)
+{
+  if (hal_gpio_read_from_pin(GPIOx, pin))
+  {
+    hal_gpio_write_to_pin(GPIOx, pin, 0);
+  }
+  else
+  {
+    hal_gpio_write_to_pin(GPIOx, pin, 1);
+  }
+    
 }
 
 /** System Clock Configuration
@@ -106,10 +185,14 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-/* USER CODE BEGIN 4 */
+void EXTI0_IRQHandler(void)
+{
+  hal_gpio_clear_interrupt(GPIO_BUTTON_PIN);
+  led_toggle(GPIOD, LED_GREEN);
+  led_toggle(GPIOD, LED_RED);
+}
 
-/* USER CODE END 4 */
-
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 /**
   * @brief  This function is executed in case of error occurrence.
   * @param  None
@@ -124,33 +207,3 @@ void _Error_Handler(char * file, int line)
   }
   /* USER CODE END Error_Handler_Debug */ 
 }
-
-#ifdef USE_FULL_ASSERT
-
-/**
-   * @brief Reports the name of the source file and the source line number
-   * where the assert_param error has occurred.
-   * @param file: pointer to the source file name
-   * @param line: assert_param error line source number
-   * @retval None
-   */
-void assert_failed(uint8_t* file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-    ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-
-}
-
-#endif
-
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-*/ 
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -1,8 +1,8 @@
 "C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\arm\bin\armproc.dll" 
 
-"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\arm\bin\armstlink.dll" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\arm\bin\armjlink.dll" 
 
-"C:\Users\gyalcin\Downloads\stm32F4\sw\CubeMXProject\test\EWARM\test/Exe\test.out" 
+"C:\Users\gyalcin\Downloads\stm32F4\sw\CubeMXProject\test\EWARM\test\Exe\test.out" 
 
 --plugin "C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\arm\bin\armbat.dll" 
 
