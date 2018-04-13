@@ -65,22 +65,24 @@ int main(void)
   //connection to the GPIO
   RCC->APB2ENR |= 0x00004000;
   
-  /*Configure the button interrupt as falling edge */
-  hal_gpio_configure_interrupt(GPIO_BUTTON_PIN, INT_FALLING_EDGE);
+  /*Configure the buttons*/
+  hal_gpio_configure_interrupt(GPIO_BUTTON_PIN_FALLING, INT_FALLING_EDGE);
+  hal_gpio_configure_interrupt(GPIO_BUTTON_PIN_RISING, INT_RISING_EDGE);
   /*Enable the interrupt on EXTI0 line */
-  hal_gpio_pin_enable_interrupt(GPIO_BUTTON_PIN, EXTIx_IRQn);  
+  hal_gpio_pin_enable_interrupt(GPIO_BUTTON_PIN_FALLING, EXTI0_IRQn);  
+  hal_gpio_pin_enable_interrupt(GPIO_BUTTON_PIN_RISING, EXTI1_IRQn);  
   
   
   while (1)
   {
-    led_turn_on(GPIOD, LED_ORANGE);
-    led_turn_on(GPIOD, LED_BLUE);
+    led_turn_on(GPIOD, GPIOD_PIN_12);
+    led_turn_on(GPIOD, GPIOD_PIN_14);
     
     for (i = 0; i<500000; i++)
       asm("nop");
     
-    led_turn_off(GPIOD, LED_ORANGE);
-    led_turn_off(GPIOD, LED_BLUE);
+    led_turn_off(GPIOD, GPIOD_PIN_12);
+    led_turn_off(GPIOD, GPIOD_PIN_14);
     
     for (i = 0; i<500000; i++)
       asm("nop");
@@ -94,20 +96,20 @@ void led_init(void)
 
   /* set the leds 12->15 to be output, and get them ready for toggling */
   gpio_pin_conf_t led_pin_conf;
-  led_pin_conf.pin      = LED_ORANGE;
+  led_pin_conf.pin      = GPIOD_PIN_12;
   led_pin_conf.mode     = GPIO_PIN_OUTPUT_MODE;
   led_pin_conf.op_type  = GPIO_PIN_OP_TYPE_PUSHPULL;
   led_pin_conf.speed    = GPIO_PIN_SPEED_MEDIUM;
   led_pin_conf.pull     = GPIO_PIN_NO_PULL_PUSH;
   hal_gpio_init(GPIOD, &led_pin_conf);
   
-  led_pin_conf.pin = LED_BLUE;
+  led_pin_conf.pin = GPIOD_PIN_13;
   hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
 
-  led_pin_conf.pin = LED_GREEN;
+  led_pin_conf.pin = GPIOD_PIN_14;
   hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
 
-  led_pin_conf.pin = LED_RED;
+  led_pin_conf.pin = GPIOD_PIN_15;
   hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
 }
 
@@ -187,11 +189,15 @@ void SystemClock_Config(void)
 
 void EXTI0_IRQHandler(void)
 {
-  hal_gpio_clear_interrupt(GPIO_BUTTON_PIN);
-  led_toggle(GPIOD, LED_GREEN);
-  led_toggle(GPIOD, LED_RED);
-}
+  hal_gpio_clear_interrupt(GPIO_BUTTON_PIN_FALLING);
+  led_toggle(GPIOD, GPIOD_PIN_15);
+ }
 
+void EXTI1_IRQHandler(void)
+{
+  hal_gpio_clear_interrupt(GPIO_BUTTON_PIN_RISING);
+  led_toggle(GPIOD, GPIOD_PIN_13);
+ }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 /**
   * @brief  This function is executed in case of error occurrence.

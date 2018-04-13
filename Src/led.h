@@ -6,7 +6,8 @@
 #define EXTIx_IRQn              EXTI0_IRQn
 #define EXTIx_IRQHandler        EXTI0_IRQHandler
 
-#define GPIO_BUTTON_PIN  0
+#define GPIO_BUTTON_PIN_FALLING  0
+#define GPIO_BUTTON_PIN_RISING   1
 #define GPIO_BUTTON_PORT GPIOA
 
 #define GPIOD_PIN_12 12
