@@ -41,76 +41,160 @@
 #include "stm32f4xx_hal.h"
 
 #include "led.h"
-
+#include "keypad.h"
+    
 void SystemClock_Config(void);
+
+uint16_t keytable[] = {0x108, 0x81, 0x0101, 0x201, 0x82, 0x102, 0x202, 0x84, 0x104, 0x204, 0x88, 0x208};
+
+static void clearPortF(void)
+{
+    hal_gpio_write_to_pin(GPIOA, 0, 0);
+    hal_gpio_write_to_pin(GPIOA, 1, 0);
+    hal_gpio_write_to_pin(GPIOA, 2, 0);
+    hal_gpio_write_to_pin(GPIOA, 3, 0);
+    hal_gpio_write_to_pin(GPIOA, 4, 0);
+
+}
+
+
+
+
 
 int main(void)
 {
-  uint32_t i;
+  uint32_t k,i,j;
   
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
   
+  //System Clock Configuration
   SystemClock_Config();
 
+  keypad_init();
+  
   //init the leds
   led_init();
+ 
+  for (i=7; i<=9; i++)
+   HAL_GPIO_WritePin(GPIOB, i, GPIO_PIN_RESET);
   
-  /* Enable the clock for the GPIOA Port, where the button is */
-  _HAL_RCC_GPIOA_CLK_ENABLE();
-  //set the mode as input
-  GPIOA->MODER &= ~0x3;
-  GPIOA->PUPDR  &= ~0x3;
-  //enable SYSCONFG for managing the external interrupt line
+  uint32_t temp, pattern;
+  uint16_t keypad, pin_no;
+ // volatile uint8_t p0, p1, p2, p3;
+  while (1)
+  {
+    pattern = 1;
+    clearPortF();
+    //hal_gpio_write_to_pin(GPIOD, pin_no, 1);
+    GPIOA->ODR |= pattern;
+    
+    //yield time
+    HAL_Delay(300);
+    
+    for (i = 0; i<4; i++)
+    {
+      //keypad = 0x0000000F & ~((0x00000780 & GPIOF->IDR) >> 7);
+      
+     //keypad = (0x00000780 & ~GPIOB->IDR);
+     HAL_Delay(30);
+     keypad = (0x00000780 & GPIOB->IDR); 
+     
+      if(keypad!=0) {
+        keypad |= pattern; 
+        break;
+      }
+      GPIOA->ODR &= ~(pattern);
+      pattern <<= 1;
+      GPIOA->ODR |= (pattern);
+     }
+    
+    // search for keycode
+        if (keypad > 0){ // then button is pushed
+            for (i=0; i<12; i++){
+              if (keytable[i]==keypad) {
+               
+                for (k=0; k<i+1; k++)
+                {
+                  led_turn_on(GPIOD, 0);
+                  
+                  for (j = 0; j<500000; j++)
+                    asm("nop");
+                
+                  led_turn_off(GPIOD, 0);
+                  
+                  for (j = 0; j<500000; j++)
+                    asm("nop");
+                  
+                }
+                
+                
+              }
+                  
+            }
+        }
+        else i = -1; // no button pushed
+    
+   
+
+void keypad_init(void)
+{
+   //enable SYSCONFG for managing the external interrupt line
   //connection to the GPIO
   RCC->APB2ENR |= 0x00004000;
   
-  /*Configure the buttons*/
-  hal_gpio_configure_interrupt(GPIO_BUTTON_PIN_FALLING, INT_FALLING_EDGE);
-  hal_gpio_configure_interrupt(GPIO_BUTTON_PIN_RISING, INT_RISING_EDGE);
-  /*Enable the interrupt on EXTI0 line */
-  hal_gpio_pin_enable_interrupt(GPIO_BUTTON_PIN_FALLING, EXTI0_IRQn);  
-  hal_gpio_pin_enable_interrupt(GPIO_BUTTON_PIN_RISING, EXTI1_IRQn);  
+  /* enable the clock for the GPIOF port, cols are*/
+  _HAL_RCC_GPIOA_CLK_ENABLE();
+  
+  gpio_pin_conf_t keypad_porta_pin_conf;
+  keypad_porta_pin_conf.pin      = 0;
+  keypad_porta_pin_conf.mode     = GPIO_PIN_OUTPUT_MODE;
+  keypad_porta_pin_conf.op_type  = GPIO_PIN_OP_TYPE_PUSHPULL;
+  keypad_porta_pin_conf.speed    = GPIO_PIN_SPEED_LOW;
+  keypad_porta_pin_conf.pull     = GPIO_PIN_PULL_UP;
+  hal_gpio_init(GPIOA, &keypad_porta_pin_conf);
+  
+  keypad_porta_pin_conf.pin      = 1;
+  hal_gpio_init(GPIOA, &keypad_porta_pin_conf);
+  
+  keypad_porta_pin_conf.pin      = 2;        
+  hal_gpio_init(GPIOA, &keypad_porta_pin_conf);
+  
+  keypad_porta_pin_conf.pin      = 3;
+  hal_gpio_init(GPIOA, &keypad_porta_pin_conf);
   
   
-  while (1)
-  {
-    led_turn_on(GPIOD, GPIOD_PIN_12);
-    led_turn_on(GPIOD, GPIOD_PIN_14);
-    
-    for (i = 0; i<500000; i++)
-      asm("nop");
-    
-    led_turn_off(GPIOD, GPIOD_PIN_12);
-    led_turn_off(GPIOD, GPIOD_PIN_14);
-    
-    for (i = 0; i<500000; i++)
-      asm("nop");
-  }
+  _HAL_RCC_GPIOB_CLK_ENABLE();
+  gpio_pin_conf_t keypad_portb_pin_conf;
+  keypad_portb_pin_conf.pin      = 7;
+  keypad_portb_pin_conf.mode     = GPIO_PIN_SPEED_LOW;
+  keypad_portb_pin_conf.speed    = GPIO_PIN_SPEED_HIGH;
+  keypad_portb_pin_conf.pull     = GPIO_PIN_NO_PULL_PUSH;
+  hal_gpio_init(GPIOB, &keypad_portb_pin_conf);
+  
+  keypad_portb_pin_conf.pin      = 8;
+  hal_gpio_init(GPIOB, &keypad_portb_pin_conf);
+  
+  keypad_portb_pin_conf.pin      = 9;
+  hal_gpio_init(GPIOB, &keypad_portb_pin_conf);
+
 }
 
 void led_init(void)
 {
+  
   /* enable the clock for the GPIOD port, where the leds will sit on */
   _HAL_RCC_GPIOD_CLK_ENABLE();
 
   /* set the leds 12->15 to be output, and get them ready for toggling */
   gpio_pin_conf_t led_pin_conf;
-  led_pin_conf.pin      = GPIOD_PIN_12;
+  led_pin_conf.pin      = 0;
   led_pin_conf.mode     = GPIO_PIN_OUTPUT_MODE;
   led_pin_conf.op_type  = GPIO_PIN_OP_TYPE_PUSHPULL;
   led_pin_conf.speed    = GPIO_PIN_SPEED_MEDIUM;
   led_pin_conf.pull     = GPIO_PIN_NO_PULL_PUSH;
   hal_gpio_init(GPIOD, &led_pin_conf);
-  
-  led_pin_conf.pin = GPIOD_PIN_13;
-  hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
-
-  led_pin_conf.pin = GPIOD_PIN_14;
-  hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
-
-  led_pin_conf.pin = GPIOD_PIN_15;
-  hal_gpio_init(GPIO_PORT_D, &led_pin_conf);
+ 
 }
 
 void led_turn_on(GPIO_TypeDef *GPIOx, uint16_t pin)

@@ -12,7 +12,7 @@ ByteLimit=50
 Show=1 1
 Sort=4 0
 [DebugChecksum]
-Checksum=-1703678331
+Checksum=565562820
 [Exceptions]
 StopOnUncaught=_ 0
 StopOnThrow=_ 0
@@ -22,6 +22,10 @@ ShowArgs=0
 MixedMode=1
 [JLinkDriver]
 CStepIntDis=_ 0
+[watch_formats]
+Fmt0={W}1:keypad	4	0
+Fmt1={W}1:pattern	4	0
+Fmt2={W}1:temp	4	0
 [Disassemble mode]
 mode=0
 [Breakpoints2]
@@ -30,6 +34,9 @@ Count=0
 LoggingEnabled=_ 0
 LogFile=_ ""
 Category=_ 0
+[TermIOLog]
+LoggingEnabled=_ 0
+LogFile=_ ""
 [Aliases]
 Count=0
 SuppressDialog=0
@@ -37,6 +44,3 @@ SuppressDialog=0
 Enabled=0
 [CallStackStripe]
 ShowTiming=1
-[TermIOLog]
-LoggingEnabled=_ 0
-LogFile=_ ""
