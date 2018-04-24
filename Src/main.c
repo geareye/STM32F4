@@ -64,7 +64,8 @@ static void clearPortF(void)
 int main(void)
 {
   uint32_t k,i,j;
-  
+  uint32_t temp, pattern;
+  uint16_t keypad, pin_no;
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
   
@@ -79,9 +80,7 @@ int main(void)
   for (i=7; i<=9; i++)
    HAL_GPIO_WritePin(GPIOB, i, GPIO_PIN_RESET);
   
-  uint32_t temp, pattern;
-  uint16_t keypad, pin_no;
- // volatile uint8_t p0, p1, p2, p3;
+     
   while (1)
   {
     pattern = 1;
@@ -134,14 +133,13 @@ int main(void)
             }
         }
         else i = -1; // no button pushed
-    
+  }
+}
    
 
 void keypad_init(void)
 {
-   //enable SYSCONFG for managing the external interrupt line
-  //connection to the GPIO
-  RCC->APB2ENR |= 0x00004000;
+
   
   /* enable the clock for the GPIOF port, cols are*/
   _HAL_RCC_GPIOA_CLK_ENABLE();
@@ -165,9 +163,10 @@ void keypad_init(void)
   
   
   _HAL_RCC_GPIOB_CLK_ENABLE();
+  
   gpio_pin_conf_t keypad_portb_pin_conf;
   keypad_portb_pin_conf.pin      = 7;
-  keypad_portb_pin_conf.mode     = GPIO_PIN_SPEED_LOW;
+  keypad_portb_pin_conf.mode     = GPIO_PIN_INPUT_MODE;
   keypad_portb_pin_conf.speed    = GPIO_PIN_SPEED_HIGH;
   keypad_portb_pin_conf.pull     = GPIO_PIN_NO_PULL_PUSH;
   hal_gpio_init(GPIOB, &keypad_portb_pin_conf);
@@ -177,8 +176,26 @@ void keypad_init(void)
   
   keypad_portb_pin_conf.pin      = 9;
   hal_gpio_init(GPIOB, &keypad_portb_pin_conf);
+  
+  ///////////////////////////////////////////////////////////////////////
+  // set EXTI interrupt sources
+  ///////////////////////////////////////////////////////////////////////
+  RCC->APB2ENR |= (1 << 14);    // SYSCFG clock enable
+  SYSCFG->EXTICR[1] |= (0x03 << 4);    // EXTI5 set to Port D
+  EXTI->IMR |= (1 << 5);                // unmask EXTI5 interrupt
+  EXTI->RTSR |= (1 << 5);            // rising edge
+  //    EXTI->FTSR |= (1 << 5);            // falling edge
 
-}
+ 
+  uint32_t prioritygroup = NVIC_GetPriorityGrouping();
+  // Highest user int priority (0), 1 sub-pri
+  uint32_t priority = NVIC_EncodePriority(prioritygroup, 0, 1 );    
+  prioritygroup = NVIC_GetPriorityGrouping();
+  priority = NVIC_EncodePriority(prioritygroup, 1, 0 );
+  NVIC_SetPriority(EXTI9_5_IRQn, priority);
+  NVIC_EnableIRQ(EXTI9_5_IRQn); 
+
+ }
 
 void led_init(void)
 {
@@ -194,7 +211,7 @@ void led_init(void)
   led_pin_conf.speed    = GPIO_PIN_SPEED_MEDIUM;
   led_pin_conf.pull     = GPIO_PIN_NO_PULL_PUSH;
   hal_gpio_init(GPIOD, &led_pin_conf);
- 
+  
 }
 
 void led_turn_on(GPIO_TypeDef *GPIOx, uint16_t pin)
@@ -271,16 +288,19 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-void EXTI0_IRQHandler(void)
+void EXTI9_5_IRQHandler(void)
 {
-  hal_gpio_clear_interrupt(GPIO_BUTTON_PIN_FALLING);
-  led_toggle(GPIOD, GPIOD_PIN_15);
+  hal_gpio_clear_interrupt(5);
  }
 
 void EXTI1_IRQHandler(void)
 {
-  hal_gpio_clear_interrupt(GPIO_BUTTON_PIN_RISING);
-  led_toggle(GPIOD, GPIOD_PIN_13);
+  hal_gpio_clear_interrupt(1);
+ }
+
+void EXTI0_IRQHandler(void)
+{
+  hal_gpio_clear_interrupt(0);
  }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 /**
