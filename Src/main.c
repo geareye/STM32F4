@@ -47,6 +47,8 @@ void SystemClock_Config(void);
 
 uint16_t keytable[] = {0x108, 0x81, 0x0101, 0x201, 0x82, 0x102, 0x202, 0x84, 0x104, 0x204, 0x88, 0x208};
 
+uint16_t keypad, pin_no;
+
 static void clearPortF(void)
 {
     hal_gpio_write_to_pin(GPIOA, 0, 0);
@@ -65,7 +67,7 @@ int main(void)
 {
   uint32_t k,i,j;
   uint32_t temp, pattern;
-  uint16_t keypad, pin_no;
+  
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
   
@@ -93,13 +95,9 @@ int main(void)
     
     for (i = 0; i<4; i++)
     {
-      //keypad = 0x0000000F & ~((0x00000780 & GPIOF->IDR) >> 7);
-      
-     //keypad = (0x00000780 & ~GPIOB->IDR);
      HAL_Delay(30);
-     keypad = (0x00000780 & GPIOB->IDR); 
      
-      if(keypad!=0) {
+     if(keypad!=0) {
         keypad |= pattern; 
         break;
       }
@@ -108,33 +106,33 @@ int main(void)
       GPIOA->ODR |= (pattern);
      }
     
-    // search for keycode
-        if (keypad > 0){ // then button is pushed
-            for (i=0; i<12; i++){
-              if (keytable[i]==keypad) {
+     // search for keycode
+     if (keypad > 0)
+     { 
+       for (i=0; i<12; i++)
+       {
+         if (keytable[i]==keypad) 
+         {
+             keypad = 0;
+             
+             for (k=0; k<i+1; k++)
+             {
+               led_turn_on(GPIOD, 0);
                
-                for (k=0; k<i+1; k++)
-                {
-                  led_turn_on(GPIOD, 0);
-                  
-                  for (j = 0; j<500000; j++)
-                    asm("nop");
-                
-                  led_turn_off(GPIOD, 0);
-                  
-                  for (j = 0; j<500000; j++)
-                    asm("nop");
-                  
-                }
-                
-                
-              }
-                  
-            }
-        }
-        else i = -1; // no button pushed
-  }
-}
+               HAL_Delay(1000);
+             
+               led_turn_off(GPIOD, 0);
+               
+               HAL_Delay(1000);
+             }                
+           }
+         }
+     }
+     else 
+       i = -1; // no button pushed
+  
+  } //end of while(1)
+}//end of main
    
 
 void keypad_init(void)
@@ -181,12 +179,14 @@ void keypad_init(void)
   // set EXTI interrupt sources
   ///////////////////////////////////////////////////////////////////////
   RCC->APB2ENR |= (1 << 14);    // SYSCFG clock enable
-  SYSCFG->EXTICR[1] |= (0x03 << 4);    // EXTI5 set to Port D
-  EXTI->IMR |= (1 << 5);                // unmask EXTI5 interrupt
-  EXTI->RTSR |= (1 << 5);            // rising edge
+  SYSCFG->EXTICR[1] |= (0x01 << 12);    // EXTI7 set to Port B  
   //    EXTI->FTSR |= (1 << 5);            // falling edge
 
- 
+  SYSCFG->EXTICR[2] |= (1 << 0 | 1 << 4);    // EXTI8&9 set to Port B  
+  EXTI->IMR |= 0x00000380;                // EXTI7 8 9 interrupt
+  EXTI->RTSR |= 0x00000380;            // rising edge
+  
+  
   uint32_t prioritygroup = NVIC_GetPriorityGrouping();
   // Highest user int priority (0), 1 sub-pri
   uint32_t priority = NVIC_EncodePriority(prioritygroup, 0, 1 );    
@@ -290,8 +290,27 @@ void SystemClock_Config(void)
 
 void EXTI9_5_IRQHandler(void)
 {
-  hal_gpio_clear_interrupt(5);
- }
+  keypad = (0x00000780 & GPIOB->IDR);
+    
+  if ((EXTI->PR >> 7) & 1) {
+      hal_gpio_clear_interrupt(7);
+      HAL_Delay(10); //debounce
+      while (GPIOB->IDR & (1 << 7));//wait for release
+      HAL_Delay(10); //debounce
+  }
+  else if ((EXTI->PR >> 8) & 1) {
+      hal_gpio_clear_interrupt(8);
+      HAL_Delay(10); //debounce
+      while (GPIOB->IDR & (1 << 8));//wait for release
+      HAL_Delay(10); //debounce
+  }
+  else {//((EXTI->PR >> 9) & 1)  
+      hal_gpio_clear_interrupt(9);
+      HAL_Delay(10); //debounce
+      while (GPIOB->IDR & (1 << 9));//wait for release
+      HAL_Delay(10); //debounce      
+  }
+}
 
 void EXTI1_IRQHandler(void)
 {
